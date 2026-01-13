@@ -9,6 +9,8 @@
 #                     powered by Python's tempfile module, removing
 #                     reliance on home directory, preventing storage
 #                     from filling up.
+# v0.3.2 2026-01-13 - Added 11Gb file limit for all formats
+#
 #brief: this web app program takes an URL as an input and downloads a mp3 or mp4 file
 #       depending on the user's choice regarding the format.
 #       it has to be run on PowerShell using the command
@@ -68,6 +70,7 @@ if st.button("Download"):
             if output_format == "mp4":
                 command = [
                     "yt-dlp",
+                    "--max-filesize", "11G", # 11Gb limit
                     # Downloads mp4 format and merges with m4a for best quality if available
                     # else, downloads best mp4 available quality.
                     "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
@@ -78,6 +81,7 @@ if st.button("Download"):
             elif output_format == "mp3":  # MP3 (Audio)
                 command = [
                     "yt-dlp",
+                    "--max-filesize", "11G",
                     "-x", "--audio-format", output_format,
                     "--audio-quality", "0",
                     "-o", output_filename,
@@ -86,6 +90,7 @@ if st.button("Download"):
             else:
                 command = [
                     "yt-dlp",
+                    "--max-filesize", "11G",
                     "-f", "ba[ext=m4a]",
                     "-o", output_filename,
                     url
