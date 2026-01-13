@@ -4,6 +4,11 @@
 # v0.1.0 2025-04-03
 # v0.1.1 2025-04-04
 # v0.2.0 2026-01-12 - Deployed on Streamlit community hosting.
+# v0.3.0 2026-01-13 - Now available on the internet.
+# v0.3.1 2026-01-13 - Fixed storage issues by using temporary folders
+#                     powered by Python's tempfile module, removing
+#                     reliance on home directory, preventing storage
+#                     from filling up.
 #brief: this web app program takes an URL as an input and downloads a mp3 or mp4 file
 #       depending on the user's choice regarding the format.
 #       it has to be run on PowerShell using the command
@@ -27,6 +32,8 @@ import subprocess               # Using subprocess to run yt-dlp (a command line
 import os                       # os is used to list downloaded files after using yt-dlp
                                 # and remove the downloaded file after serving it to the user
 import ffmpeg as converter      # Using ffmpeg to convert m4a audio files to mp3
+
+import tempfile
 
 st.set_page_config(
     page_title="YouTube Downloader",  # Name displayed on tab
@@ -53,62 +60,62 @@ if st.button("Download"):
             output_format = "mp3"
         else:
             output_format = "m4a"
+            
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_filename = os.path.join(tmpdir, "%(title)s.%(ext)s")
 
-        output_filename = "%(title)s.%(ext)s"
-
-        # Define the yt-dlp command
-        if output_format == "mp4":
-            command = [
-                "yt-dlp",
-                # Downloads mp4 format and merges with m4a for best quality if available
-                # else, downloads best mp4 available quality.
-                "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
-                "-o", output_filename,
-                url
-            ]
-
-        elif output_format == "mp3":  # MP3 (Audio)
-            command = [
-                "yt-dlp",
-                "-x", "--audio-format", output_format,
-                "--audio-quality", "0",
-                "-o", output_filename,
-                url
-            ]
-        else:
-            command = [
-                "yt-dlp",
-                "-f", "ba[ext=m4a]",
-                "-o", output_filename,
-                url
-            ]
-
-        command = [c for c in command if c]  # Remove empty strings
-
-        # Run yt-dlp
-        process = subprocess.run(command, capture_output=True, text=True)
-
-        if process.returncode == 0:
-            # Get downloaded file
-            downloaded_file = None
-            for file in os.listdir():
-                if file.endswith(output_format):
-                    downloaded_file = file
-                    break
-
-            if downloaded_file:
-                with open(downloaded_file, "rb") as file:
-                    st.download_button("Click to Download", file, downloaded_file)
-
-                os.remove(downloaded_file)  # Clean up after download
-            else:
-                st.error("Download failed. Try again!")
-        else:
+            # Define the yt-dlp command
             if output_format == "mp4":
-                st.error("Error downloading video.")
-            elif output_format == "mp3" or output_format == "m4a":
-                st.error("Error downloading audio.")
+                command = [
+                    "yt-dlp",
+                    # Downloads mp4 format and merges with m4a for best quality if available
+                    # else, downloads best mp4 available quality.
+                    "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
+                    "-o", output_filename,
+                    url
+                ]
+
+            elif output_format == "mp3":  # MP3 (Audio)
+                command = [
+                    "yt-dlp",
+                    "-x", "--audio-format", output_format,
+                    "--audio-quality", "0",
+                    "-o", output_filename,
+                    url
+                ]
             else:
-                st.error("Error downloading file.")
+                command = [
+                    "yt-dlp",
+                    "-f", "ba[ext=m4a]",
+                    "-o", output_filename,
+                    url
+                ]
+
+            command = [c for c in command if c]  # Remove empty strings
+    
+            # Run yt-dlp
+            process = subprocess.run(command, capture_output=True, text=True)
+
+            if process.returncode == 0:
+                # Get downloaded file
+                downloaded_file = None
+                for file in os.listdir(tmpdir):
+                    if file.endswith(output_format):
+                        downloaded_file = os.path.join(tmpdir, file)
+                        break
+
+                if downloaded_file:
+                    with open(downloaded_file, "rb") as file:
+                        st.download_button("Click to Download", file, downloaded_file)
+
+                else:
+                    st.error("Download failed. Try again!")
+            else:
+                if output_format == "mp4":
+                    st.error("Error downloading video.")
+                elif output_format == "mp3" or output_format == "m4a":
+                    st.error("Error downloading audio.")
+                else:
+                    st.error("Error downloading file.")
     else:
         st.warning("Please enter a valid URL.")
