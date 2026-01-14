@@ -11,6 +11,7 @@
 #                     from filling up.
 # v0.3.2 2026-01-13 - Added 11Gb file limit for all formats
 # v0.3.3 2026-01-14 - Moved the file size limit assertion before download
+# v0.3.4 2026-01-14 - Fixed fatal errors regarding limit assertion
 #
 #brief: this web app program takes an URL as an input and downloads a mp3 or mp4 file
 #       depending on the user's choice regarding the format.
@@ -38,8 +39,6 @@ import ffmpeg as converter      # Using ffmpeg to convert m4a audio files to mp3
 
 import tempfile
 
-MAX_SIZE = 10 * 1024 * 1024 * 1024   # The maximum size of a file is 10Gb
-
 st.set_page_config(
     page_title="YouTube Downloader",  # Name displayed on tab
     page_icon=":rocket:",  # Use an emoji or a path to an image for the tab icon
@@ -56,16 +55,8 @@ url = st.text_input("Enter YouTube URL:")   # Asks for a YOUTUBE url specificall
 format_choice = st.radio("Select Format:", ("MP4 (Video)", "MP3 (Audio)", "M4A (Uncompressed audio)"))
 
 if st.button("Download"):
-    if url:
-        # Making sure the file size is adequate
-        file_size = os.path.getsize(downloaded_file)
-
-        if file_size > MAX_SIZE:
-            os.remove(downloaded_file)
-            st.error("File exceeds the 11 GB size limit.")
-            st.stop()
-
-        
+    if url.startswith("http"):
+                
         # Define output filename
         # Resulting filename will be: [video's title on Youtube].[format (mp3 or mp4)]
         if format_choice == "MP4 (Video)":
@@ -82,7 +73,8 @@ if st.button("Download"):
             if output_format == "mp4":
                 command = [
                     "yt-dlp",
-                    "--max-filesize", "11G", # 11Gb limit
+                    "--match-filter", "filesize_approx <= 10G",
+                    "--max-filesize", "10G", # 10Gb limit
                     # Downloads mp4 format and merges with m4a for best quality if available
                     # else, downloads best mp4 available quality.
                     "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
@@ -93,7 +85,8 @@ if st.button("Download"):
             elif output_format == "mp3":  # MP3 (Audio)
                 command = [
                     "yt-dlp",
-                    "--max-filesize", "11G",
+                    "--match-filter", "filesize_approx <= 10G",
+                    "--max-filesize", "10G",
                     "-x", "--audio-format", output_format,
                     "--audio-quality", "0",
                     "-o", output_filename,
@@ -102,7 +95,8 @@ if st.button("Download"):
             else:
                 command = [
                     "yt-dlp",
-                    "--max-filesize", "11G",
+                    "--match-filter", "filesize_approx <= 10G",
+                    "--max-filesize", "10G",
                     "-f", "ba[ext=m4a]",
                     "-o", output_filename,
                     url
@@ -123,10 +117,17 @@ if st.button("Download"):
 
                 if downloaded_file:
                     with open(downloaded_file, "rb") as file:
-                        st.download_button("Click to Download", file, downloaded_file)
+                        data = file.read()
+                        st.download_button("Click to Download", data , os.path.basename(downloaded_file), "application/octet-stream")
 
                 else:
                     st.error("Download failed. Try again!")
+            elif process.returncode == 1:
+                if "filesize_approx" in process.stderr:
+                    st.error("❌ Video exceeds the 10 GB size limit.")
+                else:
+                    st.error("Download failed.")
+                    st.code(process.stderr)
             else:
                 if output_format == "mp4":
                     st.error("Error downloading video.")
