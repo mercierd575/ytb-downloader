@@ -10,6 +10,7 @@
 #                     reliance on home directory, preventing storage
 #                     from filling up.
 # v0.3.2 2026-01-13 - Added 11Gb file limit for all formats
+# v0.3.3 2026-01-14 - Moved the file size limit assertion before download
 #
 #brief: this web app program takes an URL as an input and downloads a mp3 or mp4 file
 #       depending on the user's choice regarding the format.
@@ -37,6 +38,8 @@ import ffmpeg as converter      # Using ffmpeg to convert m4a audio files to mp3
 
 import tempfile
 
+MAX_SIZE = 10 * 1024 * 1024 * 1024   # The maximum size of a file is 10Gb
+
 st.set_page_config(
     page_title="YouTube Downloader",  # Name displayed on tab
     page_icon=":rocket:",  # Use an emoji or a path to an image for the tab icon
@@ -54,6 +57,15 @@ format_choice = st.radio("Select Format:", ("MP4 (Video)", "MP3 (Audio)", "M4A (
 
 if st.button("Download"):
     if url:
+        # Making sure the file size is adequate
+        file_size = os.path.getsize(downloaded_file)
+
+        if file_size > MAX_SIZE:
+            os.remove(downloaded_file)
+            st.error("File exceeds the 11 GB size limit.")
+            st.stop()
+
+        
         # Define output filename
         # Resulting filename will be: [video's title on Youtube].[format (mp3 or mp4)]
         if format_choice == "MP4 (Video)":
