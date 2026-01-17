@@ -1,5 +1,5 @@
 #author: mercierd575
-#v0.2.0
+#v0.3.5
 #date:
 # v0.1.0 2025-04-03
 # v0.1.1 2025-04-04
@@ -12,6 +12,7 @@
 # v0.3.2 2026-01-13 - Added 11Gb file limit for all formats
 # v0.3.3 2026-01-14 - Moved the file size limit assertion before download
 # v0.3.4 2026-01-14 - Fixed fatal errors regarding limit assertion
+# v0.3.5 2026-01-16 - Added link to GitHub account + disclaimer.
 #
 #brief: this web app program takes an URL as an input and downloads a mp3 or mp4 file
 #       depending on the user's choice regarding the format.
@@ -137,3 +138,17 @@ if st.button("Download"):
                     st.error("Error downloading file.")
     else:
         st.warning("Please enter a valid URL.")
+
+st.markdown("---")
+st.markdown(
+    "*DISCLAIMER: Do not use this app for any illegal purposes.\n"
+    "It is your responsibility to uphold local intellectual property laws.\n"
+    "I shall not be held accountable for any legal troubles following the use of this app.*"
+)
+        
+st.markdown("---")
+st.markdown(
+    "🙏 **Enjoying this app?**\n\n"
+    "If this tool helped you, consider giving me a follow on GitHub:\n\n"
+    "👉 [GitHub](https://github.com/mercierd575)"
+)
