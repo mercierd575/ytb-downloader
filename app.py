@@ -1,154 +1,67 @@
 #author: mercierd575
-#v0.3.5
-#date:
-# v0.1.0 2025-04-03
-# v0.1.1 2025-04-04
-# v0.2.0 2026-01-12 - Deployed on Streamlit community hosting.
-# v0.3.0 2026-01-13 - Now available on the internet.
-# v0.3.1 2026-01-13 - Fixed storage issues by using temporary folders
-#                     powered by Python's tempfile module, removing
-#                     reliance on home directory, preventing storage
-#                     from filling up.
-# v0.3.2 2026-01-13 - Added 11Gb file limit for all formats
-# v0.3.3 2026-01-14 - Moved the file size limit assertion before download
-# v0.3.4 2026-01-14 - Fixed fatal errors regarding limit assertion
-# v0.3.5 2026-01-16 - Added link to GitHub account + disclaimer.
-#
-#brief: this web app program takes an URL as an input and downloads a mp3 or mp4 file
-#       depending on the user's choice regarding the format.
-#       it has to be run on PowerShell using the command
-#       streamlit run app.py
-#       Make sure no other apps are running on port 8501,
-#       otherwise streamlit won't be able to open.
-#       A corrupted cache may cause issues.
-#       To clear a corrupted cache in the shell, run
-#       streamlit cache clear
-#       And restart the app with
-#       streamlit run app.py
-#       Do not forget to download ffmpeg and add it to PATH variables
-#       to run this program
-#
-#DISCLAIMER: Do not use this app for any illegal purposes. I may not be held
-#            accountable for any legal troubles following the use of this app.
+#v0.4.0
 
 import streamlit as st          # Using streamlit for the WebApp
-import subprocess               # Using subprocess to run yt-dlp (a command line tool)
-                                # directly from python
-import os                       # os is used to list downloaded files after using yt-dlp
-                                # and remove the downloaded file after serving it to the user
-import ffmpeg as converter      # Using ffmpeg to convert m4a audio files to mp3
-
-import tempfile
 
 st.set_page_config(
-    page_title="YouTube Downloader",  # Name displayed on tab
-    page_icon=":rocket:",  # Use an emoji or a path to an image for the tab icon
+    page_title="YouTube Downloader (Offline)",  # Name displayed on tab
+    page_icon="⚠️",  # Use an emoji or a path to an image for the tab icon
     layout="centered",  # "centered" or "wide"
     initial_sidebar_state="auto"  # "auto", "expanded" or "collapsed"
 )
 
-st.title("YouTube Video Downloader 🎥")    # Title of the web app
+st.title("Service Offline Indefinitely")    # Title of the web app
 
+st.markdown("""
+### Why is this offline?
 
-# User inputs
-url = st.text_input("Enter YouTube URL:")   # Asks for a YOUTUBE url specifically
-# Format choice shows up as a bullet point list that can be checked
-format_choice = st.radio("Select Format:", ("MP4 (Video)", "MP3 (Audio)", "M4A (Uncompressed audio)"))
+YouTube has recently introduced stricter technical restrictions that prevent
+reliable video downloads without user authentication and browser-level access.
 
-if st.button("Download"):
-    if url.startswith("http"):
-                
-        # Define output filename
-        # Resulting filename will be: [video's title on Youtube].[format (mp3 or mp4)]
-        if format_choice == "MP4 (Video)":
-            output_format = "mp4"
-        elif format_choice == "MP3 (Audio)":
-            output_format = "mp3"
-        else:
-            output_format = "m4a"
-            
-        with tempfile.TemporaryDirectory() as tmpdir:
-            output_filename = os.path.join(tmpdir, "%(title)s.%(ext)s")
+To protect users and avoid unsafe or misleading behavior, this service has been
+**intentionally taken offline**
 
-            # Define the yt-dlp command
-            if output_format == "mp4":
-                command = [
-                    "yt-dlp",
-                    "--match-filter", "filesize_approx <= 10G",
-                    "--max-filesize", "10G", # 10Gb limit
-                    # Downloads mp4 format and merges with m4a for best quality if available
-                    # else, downloads best mp4 available quality.
-                    "-f", "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
-                    "-o", output_filename,
-                    url
-                ]
+*Fighting against YouTube's technical restrictions has become increasingly
+difficult. The platform continuously updates its systems to prevent automated
+downloads, requiring user authentication, browser-level interactions, and
+frequent workarounds. Each change can break existing tools, and what worked
+yesterday may fail today. Maintaining a downloader that works reliably across
+all videos now requires complex setups, constant updates, and handling sensitive
+user credentials; making it impractical and potentially unsafe for public use.
+I would never want to knowingly make available a tool that is unsafe to the
+public.*
 
-            elif output_format == "mp3":  # MP3 (Audio)
-                command = [
-                    "yt-dlp",
-                    "--match-filter", "filesize_approx <= 10G",
-                    "--max-filesize", "10G",
-                    "-x", "--audio-format", output_format,
-                    "--audio-quality", "0",
-                    "-o", output_filename,
-                    url
-                ]
-            else:
-                command = [
-                    "yt-dlp",
-                    "--match-filter", "filesize_approx <= 10G",
-                    "--max-filesize", "10G",
-                    "-f", "ba[ext=m4a]",
-                    "-o", output_filename,
-                    url
-                ]
+---
 
-            command = [c for c in command if c]  # Remove empty strings
-    
-            # Run yt-dlp
-            process = subprocess.run(command, capture_output=True, text=True)
+### What does this mean?
 
-            if process.returncode == 0:
-                # Get downloaded file
-                downloaded_file = None
-                for file in os.listdir(tmpdir):
-                    if file.endswith(output_format):
-                        downloaded_file = os.path.join(tmpdir, file)
-                        break
+- No downloads at the moment
+- No URL processing
+- No background work happening
 
-                if downloaded_file:
-                    with open(downloaded_file, "rb") as file:
-                        data = file.read()
-                        st.download_button("Click to Download", data , os.path.basename(downloaded_file), "application/octet-stream")
+---
 
-                else:
-                    st.error("Download failed. Try again!")
-            elif process.returncode == 1:
-                if "filesize_approx" in process.stderr:
-                    st.error("❌ Video exceeds the 10 GB size limit.")
-                else:
-                    st.error("Download failed.")
-                    st.code(process.stderr)
-            else:
-                if output_format == "mp4":
-                    st.error("Error downloading video.")
-                elif output_format == "mp3" or output_format == "m4a":
-                    st.error("Error downloading audio.")
-                else:
-                    st.error("Error downloading file.")
-    else:
-        st.warning("Please enter a valid URL.")
+### Will it come back?
+
+Possibly. If YouTube changes their policies or a safe, user-friendly solution
+becomes available, this service may return.
+
+---
+
+### What can I do now?
+
+- If you are not tech-savvy enough to run an app locally, you could use
+[EzConv](https://ezconv.cc), which is updated often enough to be reliable.
+- If you are a tech-savvy person, you could try to run the latest version
+of [my app](https://github.com/mercierd575/ytb-downloader) locally
+on your computer or local network.
+
+---
+
+Thank you for your understanding.
+""")
 
 st.markdown("---")
-st.markdown(
-    "*DISCLAIMER: Do not use this app for any illegal purposes.\n"
-    "It is your responsibility to uphold local intellectual property laws.\n"
-    "I shall not be held accountable for any legal troubles following the use of this app.*"
-)
-        
-st.markdown("---")
-st.markdown(
-    "🙏 **Enjoying this app?**\n\n"
-    "If this tool helped you, consider giving me a follow on GitHub:\n\n"
-    "👉 [GitHub](https://github.com/mercierd575)"
+st.caption(
+    "Version 0.4.0 - Service Offline"
 )
